@@ -1,11 +1,78 @@
 #include "DisasterPlanning.h"
 using namespace std;
 
+
+
+
+bool isCovered(const string& city,
+               const Map<string, Set<string>>& roadNetwork,
+               const Set<string>& supplyLocations) {
+    if (supplyLocations.contains(city)) return true;
+
+    for (string neighbor: roadNetwork[city]) {
+        if (supplyLocations.contains(neighbor)) return true;
+    }
+
+    return false;
+}
+
+bool allCitiesCovered(const Map<string, Set<string>>& roadNetwork,
+                      const Set<string>& supplyLocations) {
+    for (const string& city : roadNetwork) {
+        if (!isCovered(city, roadNetwork, supplyLocations)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool canPlaceSupplies(const Vector<string>& cities,
+                      const Map<string, Set<string>>& roadNetwork,
+                      int numCities,
+                      int index,
+                      Set<string>& chosen,
+                      Optional<Set<string>>& result) {
+    if (chosen.size() > numCities) return false;
+
+    if (index == cities.size()) {
+        if (allCitiesCovered(roadNetwork, chosen)) {
+            result = chosen;
+            return true;
+        }
+        return false;
+    }
+
+    if (canPlaceSupplies(cities, roadNetwork, numCities, index + 1, chosen, result)) {
+        return true;
+    }
+
+    chosen += cities[index];
+    if (canPlaceSupplies(cities, roadNetwork, numCities, index + 1, chosen, result)) {
+        return true;
+    }
+    chosen -= cities[index];
+
+    return false;
+}
+
 Optional<Set<string>> placeEmergencySupplies(const Map<string, Set<string>>& roadNetwork,
                                              int numCities) {
-    /* TODO: Delete this comment and next few lines, then implement this function. */
-    (void) roadNetwork;
-    (void) numCities;
+    if (numCities < 0) {
+        error("Number of cities cannot be negative.");
+    }
+
+    Vector<string> cities;
+    for (const string& city : roadNetwork) {
+        cities += city;
+    }
+
+    Set<string> chosen;
+    Optional<Set<string>> result = Nothing;
+
+    if (canPlaceSupplies(cities, roadNetwork, numCities, 0, chosen, result)) {
+        return result;
+    }
+
     return Nothing;
 }
 
@@ -32,27 +99,26 @@ Map<string, Set<string>> makeSymmetric(const Map<string, Set<string>>& source) {
     return result;
 }
 
-/* This helper function tests whether a city has been covered by a set of supply locations
- * and is used by our testing code. You're welcome to use it in your tests as well!
- */
-bool isCovered(const string& city,
-               const Map<string, Set<string>>& roadNetwork,
-               const Set<string>& supplyLocations) {
-    if (supplyLocations.contains(city)) return true;
-
-    for (string neighbor: roadNetwork[city]) {
-        if (supplyLocations.contains(neighbor)) return true;
-    }
-
-    return false;
-}
-
 /* * * * * * Test Cases Below This Point * * * * * */
 
 /* TODO: Add your own custom tests here! */
 
 
+STUDENT_TEST("Works for a simple map with multiple connected cities.") {
+    Map<string, Set<string>> map = makeSymmetric({
+        { "A", { "B", "C" } },
+        { "B", { "A", "C" } },
+        { "C", { "A", "B" } }
+    });
 
+    EXPECT_EQUAL(placeEmergencySupplies(map, 0), Nothing);
+
+    EXPECT_NOT_EQUAL(placeEmergencySupplies(map, 1), Nothing);
+
+    EXPECT_NOT_EQUAL(placeEmergencySupplies(map, 2), Nothing);
+
+    EXPECT_NOT_EQUAL(placeEmergencySupplies(map, 3), Nothing);
+}
 
 
 
