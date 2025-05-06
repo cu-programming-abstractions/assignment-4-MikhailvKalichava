@@ -2,19 +2,43 @@
 using namespace std;
 
 Optional<Set<int>> makeTarget(const Set<int>& elems, int target) {
-    /* TODO: Delete this comment and the next few lines, then implement this
-     * function.
-     */
-    (void) elems;
-    (void) target;
+    if (target == 0) return {}; // Can always make 0 with empty set
+    if (elems.isEmpty()) return Nothing;
+
+    int elem = elems.first();
+    Set<int> rest = elems;
+    rest.remove(elem);
+
+    // Try including the element
+    Optional<Set<int>> withElem = makeTarget(rest, target - elem);
+    if (withElem != Nothing) {
+        Set<int> result = withElem.value(); // Access the value directly
+        result.add(elem);
+        return result;
+    }
+
+    // Try excluding the element
+    Optional<Set<int>> withoutElem = makeTarget(rest, target);
+    if (withoutElem != Nothing) return withoutElem;
+
     return Nothing;
 }
+
+
+
+
+
 
 /* * * * * Test Cases Below This Point * * * * */
 #include "GUI/SimpleTest.h"
 
-/* TODO: Add at least one custom test here, then delete this comment. */
-
+/* Custom test: includes both positive and negative numbers. */
+STUDENT_TEST("Works with negative numbers") {
+    Set<int> nums = {-3, 1, 2, 5};
+    EXPECT_EQUAL(makeTarget(nums, 4), {-3, 2, 5});
+    EXPECT_EQUAL(makeTarget(nums, 0), {});
+    EXPECT_EQUAL(makeTarget(nums, 100), Nothing);
+}
 
 
 

@@ -1,23 +1,116 @@
 #include "ShiftScheduling.h"
 using namespace std;
 
-int numSchedulesFor(const Set<Shift>& shifts, int maxHours) {
-    /* TODO: Delete this comment and the lines below it, then implement
-     * this function.
-     */
-    (void) shifts;
-    (void) maxHours;
-    return -1;
+namespace {
+// Check if a shift overlaps with any shift in the current schedule
+bool overlapsWithAny(const Shift& shift, const Set<Shift>& schedule) {
+    for (const Shift& s : schedule) {
+        if (overlapsWith(shift, s)) return true;
+    }
+    return false;
+}
+
+// Calculate total hours of a schedule
+int totalHours(const Set<Shift>& schedule) {
+    int total = 0;
+    for (const Shift& s : schedule) {
+        total += lengthOf(s);
+    }
+    return total;
+}
+
+// Calculate total value (profit) of a schedule
+int totalValue(const Set<Shift>& schedule) {
+    int total = 0;
+    for (const Shift& s : schedule) {
+        total += profitFor(s);
+    }
+    return total;
+}
+
+// Recursive backtracking
+void maxProfitHelper(const Vector<Shift>& shifts, int maxHours,
+                     Set<Shift>& current, Set<Shift>& best, int& bestValue, int index) {
+    if (index == shifts.size()) {
+        int currentValue = totalValue(current);
+        if (currentValue > bestValue) {
+            bestValue = currentValue;
+            best = current;
+        }
+        return;
+    }
+
+    // Option 1: skip current shift
+    maxProfitHelper(shifts, maxHours, current, best, bestValue, index + 1);
+
+    // Option 2: take current shift if valid
+    const Shift& shift = shifts[index];
+    if (!overlapsWithAny(shift, current) && totalHours(current) + lengthOf(shift) <= maxHours) {
+        current += shift;
+        maxProfitHelper(shifts, maxHours, current, best, bestValue, index + 1);
+        current -= shift;
+    }
+}
 }
 
 Set<Shift> maxProfitSchedule(const Set<Shift>& shifts, int maxHours) {
-    /* TODO: Delete this comment and the lines below it, then implement
-     * this function.
-     */
-    (void) shifts;
-    (void) maxHours;
-    return {};
+    if (maxHours < 0) {
+        error("maxHours cannot be negative");
+    }
+
+    Vector<Shift> shiftList;
+    for (const Shift& shift : shifts) {
+        shiftList.add(shift);
+    }
+
+    Set<Shift> current, best;
+    int bestValue = 0;
+
+    maxProfitHelper(shiftList, maxHours, current, best, bestValue, 0);
+
+    return best;
 }
+
+int numSchedulesForHelper(const Vector<Shift>& shifts, int maxHours, Set<Shift>& current, int index) {
+    if (index == shifts.size()) {
+        return 1; // One valid combination found (could be empty)
+    }
+
+    int total = 0;
+
+    // Option 1: Skip the current shift
+    total += numSchedulesForHelper(shifts, maxHours, current, index + 1);
+
+    // Option 2: Include the current shift if it's valid
+    const Shift& shift = shifts[index];
+    int shiftLength = lengthOf(shift);
+    if (!overlapsWithAny(shift, current) && totalHours(current) + shiftLength <= maxHours) {
+        current += shift;
+        total += numSchedulesForHelper(shifts, maxHours, current, index + 1);
+        current -= shift;
+    }
+
+    return total;
+}
+
+int numSchedulesFor(const Set<Shift>& shifts, int maxHours) {
+    if (maxHours < 0) {
+        error("maxHours cannot be negative");
+    }
+
+    Vector<Shift> shiftList;
+    for (const Shift& shift : shifts) {
+        shiftList.add(shift);
+    }
+
+    Set<Shift> current;
+    return numSchedulesForHelper(shiftList, maxHours, current, 0);
+}
+
+
+
+
+
 
 
 
@@ -28,14 +121,11 @@ Set<Shift> maxProfitSchedule(const Set<Shift>& shifts, int maxHours) {
 /* TODO: Add your own tests here. You know the drill - look for edge cases, think about
  * very small and very large cases, etc.
  */
-
-
-
-
-
-
-
-
+STUDENT_TEST("numSchedulesFor reports errors with illegal numbers of hours.") {
+    // Testing negative values for hours, which should trigger an error
+    EXPECT_ERROR(numSchedulesFor({}, -137));  // Expecting error with negative maxHours
+    EXPECT_ERROR(numSchedulesFor({}, -1));    // Expecting error with negative maxHours
+}
 
 
 
